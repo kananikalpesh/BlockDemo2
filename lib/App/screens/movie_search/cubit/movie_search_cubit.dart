@@ -19,10 +19,19 @@ class MovieSearchCubit extends Cubit<MovieSearchState> {
           await movieSearchRepository.fetchSearchApi(query, null);
       ();
       Map<String, dynamic> serchedata = response?.data;
-      List<dynamic> responseData = serchedata['Search'];
-      List<Movie> dataList =
-          responseData.map((item) => Movie.fromJson(item)).toList();
-      emit(MovieSearchLoadedState(dataList));
+
+      String responceKey = serchedata['Response'];
+
+      if (responceKey == 'True') {
+        List<dynamic> responseData = serchedata['Search'];
+        List<Movie> dataList =
+            responseData.map((item) => Movie.fromJson(item)).toList();
+        emit(MovieSearchLoadedState(dataList));
+      } else {
+        String ErrorKey = serchedata['Error'];
+
+        emit(MovieSearchErrorState(ErrorKey.toString()));
+      }
     } catch (e) {
       emit(MovieSearchErrorState(e.toString()));
     }

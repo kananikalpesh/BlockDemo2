@@ -1,18 +1,22 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/widgets.dart';
+import 'package:movie_discovery_app/App/data/constants/color_constants.dart';
 import 'package:movie_discovery_app/App/screens/movie_details/cubit/movie_details_cubit.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:movie_discovery_app/App/widgets/snack_bar.dart';
 
 class MovieDetailsScreen extends StatefulWidget {
-  const MovieDetailsScreen({super.key});
+  final String imdbID;
+
+  const MovieDetailsScreen({Key? key, required this.imdbID}) : super(key: key);
 
   @override
   State<MovieDetailsScreen> createState() => _MovieDetailsState();
 }
 
 class _MovieDetailsState extends State<MovieDetailsScreen> {
-  String? imdbID;
+  //String? imdbID;
 
   @override
   void initState() {
@@ -28,11 +32,12 @@ class _MovieDetailsState extends State<MovieDetailsScreen> {
     super.didChangeDependencies();
 
     // Retrieve the route arguments safely after initState
-    imdbID = ModalRoute.of(context)?.settings.arguments as String?;
+    //imdbID = ModalRoute.of(context)?.settings.arguments as String?;
 
     // Fetch movie details using the Cubit, after the widget context is ready
-    if (imdbID != null && imdbID!.isNotEmpty) {
-      BlocProvider.of<MovieDetailsCubit>(context).movieDetails(imdbID: imdbID!);
+    if (widget.imdbID != null && widget.imdbID!.isNotEmpty) {
+      BlocProvider.of<MovieDetailsCubit>(context)
+          .movieDetails(imdbID: widget.imdbID!);
     }
   }
 
@@ -44,70 +49,145 @@ class _MovieDetailsState extends State<MovieDetailsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        body: Container(
-      child: BlocConsumer<MovieDetailsCubit, MovieDetailsState>(
+      appBar: AppBar(
+        elevation: 0,
+        backgroundColor: Colors.transparent,
+        flexibleSpace: Container(
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              colors: [AppColors.primaryColor, AppColors.secondaryColor],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.3),
+                spreadRadius: 5,
+                blurRadius: 15,
+                offset: Offset(0, 5),
+              ),
+            ],
+          ),
+        ),
+        title: const Text(
+          "Movie Details",
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+            fontSize: 20,
+          ),
+        ),
+        centerTitle: true,
+        iconTheme: const IconThemeData(color: Colors.white),
+      ),
+      body: BlocConsumer<MovieDetailsCubit, MovieDetailsState>(
         builder: (context, state) {
-          ///Cubit ma direct function call thache
-          /// cubit kkoi event send kar va mate direct function call kar va nu
-          /// BlocProvider.of<HomeScreenCubit>(context).getUsersList();
-
           if (state is MovieDetailsLoadingState) {
             return const Center(
               child: CircularProgressIndicator(),
             );
           } else if (state is MovieDetailsLoadedState) {
-            return Column(
-              children: [
-                const Text(
-                  "Populer Movies",
-                  style: TextStyle(fontWeight: FontWeight.w700),
-                ),
-                const SizedBox(
-                  height: 10,
-                ),
-                const Text(
-                  "Title :",
-                  style: TextStyle(fontWeight: FontWeight.w700),
-                ),
-                const SizedBox(
-                  height: 5,
-                ),
-                Text(
-                  state.movieDetails.title ?? "",
-                  style: const TextStyle(
-                      fontWeight: FontWeight.w400, color: Colors.black45),
-                ),
-                const SizedBox(
-                  height: 10,
-                ),
-                const Text(
-                  "imdbID :",
-                  style: TextStyle(fontWeight: FontWeight.w700),
-                ),
-                const SizedBox(
-                  height: 5,
-                ),
-                Text(
-                  state.movieDetails.imdbID ?? "",
-                  style: const TextStyle(
-                      fontWeight: FontWeight.w400, color: Colors.black45),
-                ),
-                const SizedBox(
-                  height: 10,
-                ),
-                const Text(
-                  "Year :",
-                  style: TextStyle(fontWeight: FontWeight.w700),
-                ),
-                const SizedBox(
-                  height: 5,
-                ),
-                Text(
-                  state.movieDetails.year ?? "",
-                  style: const TextStyle(
-                      fontWeight: FontWeight.w400, color: Colors.black45),
-                ),
-              ],
+            return AnimatedOpacity(
+              opacity: 1.0,
+              duration: const Duration(milliseconds: 500),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Hero(
+                    tag: widget.imdbID, // Match the Hero tag
+                    child: Image.network(
+                      state.movieDetails.poster ??
+                          "https://via.placeholder.com/300",
+                      width: double.infinity,
+                      height: 250,
+                      fit: BoxFit.cover,
+                      loadingBuilder: (context, child, loadingProgress) {
+                        if (loadingProgress == null) return child;
+                        return Center(
+                          child: CircularProgressIndicator(
+                            value: loadingProgress.expectedTotalBytes != null
+                                ? loadingProgress.cumulativeBytesLoaded /
+                                    loadingProgress.expectedTotalBytes!
+                                : null,
+                          ),
+                        );
+                      },
+                      errorBuilder: (context, error, stackTrace) =>
+                          const Center(
+                        child: Icon(Icons.error, color: Colors.red),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  Expanded(
+                    child: SingleChildScrollView(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            buildDetailRow("Title:", state.movieDetails.title),
+                            buildDetailRow("Year:", state.movieDetails.year),
+                            buildDetailRow("Rated:", state.movieDetails.rated),
+                            buildDetailRow(
+                                "Released:", state.movieDetails.released),
+                            buildDetailRow(
+                                "Runtime:", state.movieDetails.runtime),
+                            buildDetailRow("Genre:", state.movieDetails.genre),
+                            buildDetailRow(
+                                "Director:", state.movieDetails.director),
+                            buildDetailRow(
+                                "Writer:", state.movieDetails.writer),
+                            buildDetailRow(
+                                "Actors:", state.movieDetails.actors),
+                            buildDetailRow("Plot:", state.movieDetails.plot),
+                            buildDetailRow(
+                                "Language:", state.movieDetails.language),
+                            buildDetailRow(
+                                "Country:", state.movieDetails.country),
+                            buildDetailRow(
+                                "Awards:", state.movieDetails.awards),
+                            buildDetailRow(
+                                "Box Office:", state.movieDetails.boxOffice),
+                            buildDetailRow("IMDb Rating:",
+                                "${state.movieDetails.imdbRating}/10"),
+                            buildDetailRow(
+                                "Metascore:", state.movieDetails.metascore),
+                            const SizedBox(height: 15),
+                            // Ratings Section
+                            const Text(
+                              "Ratings:",
+                              style: TextStyle(
+                                  fontWeight: FontWeight.bold, fontSize: 18),
+                            ),
+                            ...?state.movieDetails.ratings?.map(
+                              (rating) => Padding(
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 5),
+                                child: Row(
+                                  children: [
+                                    Text(
+                                      "${rating.source}: ",
+                                      style: const TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 16),
+                                    ),
+                                    Text(
+                                      rating.value ?? "",
+                                      style: const TextStyle(
+                                          fontSize: 16, color: Colors.black54),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             );
           } else if (state is MovieDetailsErrorState) {
             return Center(
@@ -131,6 +211,30 @@ class _MovieDetailsState extends State<MovieDetailsScreen> {
           }
         },
       ),
-    ));
+    );
+  }
+
+  // Helper function to create a consistent style for each detail row
+  Widget buildDetailRow(String label, String? value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 15),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            "$label ",
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+          ),
+          Expanded(
+            child: Text(
+              value ?? "N/A",
+              style: const TextStyle(fontSize: 16, color: Colors.black54),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

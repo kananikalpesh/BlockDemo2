@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:movie_discovery_app/App/data/constants/color_constants.dart';
 import 'package:movie_discovery_app/App/models/movie.dart';
-import 'package:movie_discovery_app/App/routes/app_routes.dart';
 import 'package:movie_discovery_app/App/screens/movie_search/cubit/movie_search_cubit.dart';
+import 'package:movie_discovery_app/App/screens/movie_search/view/movie_search_container.dart';
 
 class MovieSearch extends StatefulWidget {
   const MovieSearch({super.key});
@@ -17,17 +18,72 @@ class _MovieSearchState extends State<MovieSearch> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        elevation: 0,
+        backgroundColor: Colors.transparent,
+        flexibleSpace: Container(
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              colors: [AppColors.primaryColor, AppColors.secondaryColor],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.3),
+                spreadRadius: 5,
+                blurRadius: 15,
+                offset: Offset(0, 5),
+              ),
+            ],
+          ),
+        ),
+        title: const Text(
+          "Search movies",
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+            fontSize: 20,
+          ),
+        ),
+        centerTitle: true,
+        iconTheme: const IconThemeData(color: Colors.white),
+      ),
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 12),
         child: Column(
           children: [
-            const SizedBox(height: 10),
+            const SizedBox(height: 20),
             TextField(
               controller: searchController,
               onSubmitted: (text) {
                 BlocProvider.of<MovieSearchCubit>(context)
                     .searchData(query: text);
               },
+              decoration: InputDecoration(
+                hintText: "Search movies...",
+                hintStyle: TextStyle(color: Colors.grey.shade600),
+                prefixIcon: Icon(Icons.search, color: Colors.grey.shade600),
+                filled: true,
+                fillColor: Colors.white,
+                contentPadding: const EdgeInsets.symmetric(
+                    vertical: 12.0, horizontal: 16.0),
+                border: const OutlineInputBorder(
+                  borderRadius: BorderRadius.all(Radius.circular(30)),
+                  borderSide: BorderSide.none,
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: const BorderRadius.all(Radius.circular(30)),
+                  borderSide:
+                      BorderSide(color: Colors.grey.shade300, width: 1.5),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: const BorderRadius.all(Radius.circular(30)),
+                  borderSide:
+                      BorderSide(color: Colors.blue.shade300, width: 1.5),
+                ),
+              ),
+              style: const TextStyle(color: Colors.black87, fontSize: 16),
             ),
             const SizedBox(height: 10),
             Expanded(
@@ -41,87 +97,13 @@ class _MovieSearchState extends State<MovieSearch> {
                     return ListView.builder(
                       itemBuilder: (context, index) {
                         Movie movies = state.populerMoviesList[index];
-                        return InkWell(
-                          onTap: () {
-                            Navigator.pushNamed(context, Routes.movieDetails,
-                                arguments: movies.imdbID);
+                        return MovieOpenContainerSearch(
+                          movie: movies,
+                          isHideFav: false,
+                          onAddToFavorites: (context, movie) {
+                            BlocProvider.of<MovieSearchCubit>(context)
+                                .addMovieInDb(movie);
                           },
-                          child: Container(
-                            height: 300,
-                            color: Colors.greenAccent,
-                            margin: const EdgeInsets.symmetric(
-                                horizontal: 20, vertical: 10),
-                            child: Padding(
-                              padding: const EdgeInsets.all(10),
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.start,
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const SizedBox(
-                                    height: 10,
-                                  ),
-                                  const Text(
-                                    "Title :",
-                                    style:
-                                        TextStyle(fontWeight: FontWeight.w700),
-                                  ),
-                                  const SizedBox(
-                                    height: 5,
-                                  ),
-                                  Text(
-                                    movies.title ?? "",
-                                    style: const TextStyle(
-                                        fontWeight: FontWeight.w400,
-                                        color: Colors.black45),
-                                  ),
-                                  const SizedBox(
-                                    height: 10,
-                                  ),
-                                  const Text(
-                                    "imdbID :",
-                                    style:
-                                        TextStyle(fontWeight: FontWeight.w700),
-                                  ),
-                                  const SizedBox(
-                                    height: 5,
-                                  ),
-                                  Text(
-                                    movies.imdbID ?? "",
-                                    style: const TextStyle(
-                                        fontWeight: FontWeight.w400,
-                                        color: Colors.black45),
-                                  ),
-                                  const SizedBox(
-                                    height: 10,
-                                  ),
-                                  const Text(
-                                    "Year :",
-                                    style:
-                                        TextStyle(fontWeight: FontWeight.w700),
-                                  ),
-                                  const SizedBox(
-                                    height: 5,
-                                  ),
-                                  Text(
-                                    movies.year ?? "",
-                                    style: const TextStyle(
-                                        fontWeight: FontWeight.w400,
-                                        color: Colors.black45),
-                                  ),
-                                  const SizedBox(
-                                    height: 5,
-                                  ),
-                                  IconButton(
-                                    onPressed: () {
-                                      BlocProvider.of<MovieSearchCubit>(context)
-                                          .addMovieInDb(movies);
-                                    },
-                                    icon: Icon(Icons.favorite_outline),
-                                  )
-                                ],
-                              ),
-                            ),
-                          ),
                         );
                       },
                       itemCount: state.populerMoviesList.length,
@@ -135,9 +117,33 @@ class _MovieSearchState extends State<MovieSearch> {
                     );
                   } else if (state is MovieSearchEmptyState) {
                     return const Center(
-                      child: Text(
-                        "Please search movie",
-                        style: TextStyle(color: Colors.red),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.movie_outlined,
+                            color: AppColors.secondaryColor,
+                            size: 50,
+                          ),
+                          SizedBox(height: 16),
+                          Text(
+                            "Start Searching for Movies!",
+                            style: TextStyle(
+                              color: AppColors.secondaryColor,
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          SizedBox(height: 8),
+                          Text(
+                            "Use the search bar above to find your favorite movies.",
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: Colors.grey,
+                              fontSize: 16,
+                            ),
+                          ),
+                        ],
                       ),
                     );
                   } else {

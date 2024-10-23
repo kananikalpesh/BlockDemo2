@@ -1,11 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:movie_discovery_app/App/data/constants/color_constants.dart';
 import 'package:movie_discovery_app/App/models/movie.dart';
 import 'package:movie_discovery_app/App/routes/app_routes.dart';
 import 'package:movie_discovery_app/App/screens/home_screen/bloc/home_screen_cubit.dart';
 import 'package:movie_discovery_app/App/screens/home_screen/bloc/home_screen_state.dart';
+import 'package:movie_discovery_app/App/screens/home_screen/view/movie_container.dart';
+import 'package:movie_discovery_app/App/screens/movie_details/cubit/movie_details_cubit.dart';
+import 'package:movie_discovery_app/App/screens/movie_details/view/movie_details.dart';
 import 'package:movie_discovery_app/App/widgets/snack_bar.dart';
+import 'package:animations/animations.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -19,34 +24,62 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text("Home Screen"),
+        elevation: 0,
+        backgroundColor: Colors.transparent,
+        flexibleSpace: Container(
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              colors: [AppColors.primaryColor, AppColors.secondaryColor],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.3),
+                spreadRadius: 5,
+                blurRadius: 15,
+                offset: Offset(0, 5),
+              ),
+            ],
+          ),
+        ),
+        title: const Text(
+          "Home Screen",
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+            fontSize: 20,
+          ),
+        ),
+        centerTitle: true,
         actions: [
           IconButton(
             onPressed: () async {
               await Navigator.pushNamed(context, Routes.movieSearch);
               BlocProvider.of<HomeScreenCubit>(context).init();
             },
-            icon: const Icon(Icons.search),
-          )
+            icon: const Icon(Icons.search, color: Colors.white),
+          ),
         ],
       ),
       body: SafeArea(
         child: BlocConsumer<HomeScreenCubit, HomeScreenState>(
           builder: (context, state) {
-            ///Cubit ma direct function call thache
-            /// cubit kkoi event send kar va mate direct function call kar va nu
-            /// BlocProvider.of<HomeScreenCubit>(context).getUsersList();
-
             if (state is HomeScreenLoadingState) {
               return const Center(
                 child: CircularProgressIndicator(),
               );
             } else if (state is HomeScreenLoadedState) {
               return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    "Populer Movies",
-                    style: TextStyle(fontWeight: FontWeight.w700),
+                  const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    child: Text(
+                      "Popular Movies",
+                      style:
+                          TextStyle(fontWeight: FontWeight.w700, fontSize: 22),
+                    ),
                   ),
                   SizedBox(
                     height: 300,
@@ -54,87 +87,13 @@ class _HomeScreenState extends State<HomeScreen> {
                       scrollDirection: Axis.horizontal,
                       itemBuilder: (context, index) {
                         Movie movies = state.populerMoviesList[index];
-                        return InkWell(
-                          onTap: () {
-                            Navigator.pushNamed(context, Routes.movieDetails,
-                                arguments: movies.imdbID);
+                        return MovieOpenContainer(
+                          movie: movies,
+                          isHideFav: false,
+                          onAddToFavorites: (context, movie) {
+                            BlocProvider.of<HomeScreenCubit>(context)
+                                .addMovieInDb(movie);
                           },
-                          child: Container(
-                            height: 300,
-                            color: Colors.greenAccent,
-                            margin: const EdgeInsets.symmetric(
-                                horizontal: 20, vertical: 10),
-                            child: Padding(
-                              padding: const EdgeInsets.all(10),
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.start,
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const SizedBox(
-                                    height: 10,
-                                  ),
-                                  const Text(
-                                    "Title :",
-                                    style:
-                                        TextStyle(fontWeight: FontWeight.w700),
-                                  ),
-                                  const SizedBox(
-                                    height: 5,
-                                  ),
-                                  Text(
-                                    movies.title ?? "",
-                                    style: const TextStyle(
-                                        fontWeight: FontWeight.w400,
-                                        color: Colors.black45),
-                                  ),
-                                  const SizedBox(
-                                    height: 10,
-                                  ),
-                                  const Text(
-                                    "imdbID :",
-                                    style:
-                                        TextStyle(fontWeight: FontWeight.w700),
-                                  ),
-                                  const SizedBox(
-                                    height: 5,
-                                  ),
-                                  Text(
-                                    movies.imdbID ?? "",
-                                    style: const TextStyle(
-                                        fontWeight: FontWeight.w400,
-                                        color: Colors.black45),
-                                  ),
-                                  const SizedBox(
-                                    height: 10,
-                                  ),
-                                  const Text(
-                                    "Year :",
-                                    style:
-                                        TextStyle(fontWeight: FontWeight.w700),
-                                  ),
-                                  const SizedBox(
-                                    height: 5,
-                                  ),
-                                  Text(
-                                    movies.year ?? "",
-                                    style: const TextStyle(
-                                        fontWeight: FontWeight.w400,
-                                        color: Colors.black45),
-                                  ),
-                                  const SizedBox(
-                                    height: 5,
-                                  ),
-                                  IconButton(
-                                    onPressed: () {
-                                      BlocProvider.of<HomeScreenCubit>(context)
-                                          .addMovieInDb(movies);
-                                    },
-                                    icon: Icon(Icons.favorite_outline),
-                                  )
-                                ],
-                              ),
-                            ),
-                          ),
                         );
                       },
                       itemCount: state.populerMoviesList.length,
@@ -143,9 +102,13 @@ class _HomeScreenState extends State<HomeScreen> {
                   const SizedBox(
                     height: 5,
                   ),
-                  const Text(
-                    "Favorites Movies",
-                    style: TextStyle(fontWeight: FontWeight.w700),
+                  const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    child: Text(
+                      "Favorites Movies",
+                      style:
+                          TextStyle(fontWeight: FontWeight.w700, fontSize: 22),
+                    ),
                   ),
                   SizedBox(
                     height: 300,
@@ -153,87 +116,13 @@ class _HomeScreenState extends State<HomeScreen> {
                       scrollDirection: Axis.horizontal,
                       itemBuilder: (context, index) {
                         Movie movies = state.favoritesMoviesList[index];
-                        return InkWell(
-                          onTap: () {
-                            Navigator.pushNamed(context, Routes.movieDetails,
-                                arguments: movies.imdbID);
+                        return MovieOpenContainer(
+                          movie: movies,
+                          isHideFav: true,
+                          onAddToFavorites: (context, movie) {
+                            BlocProvider.of<HomeScreenCubit>(context)
+                                .addMovieInDb(movie);
                           },
-                          child: Container(
-                            height: 300,
-                            color: Colors.greenAccent,
-                            margin: const EdgeInsets.symmetric(
-                                horizontal: 20, vertical: 10),
-                            child: Padding(
-                              padding: const EdgeInsets.all(10),
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.start,
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const SizedBox(
-                                    height: 10,
-                                  ),
-                                  const Text(
-                                    "Title :",
-                                    style:
-                                        TextStyle(fontWeight: FontWeight.w700),
-                                  ),
-                                  const SizedBox(
-                                    height: 5,
-                                  ),
-                                  Text(
-                                    movies.title ?? "",
-                                    style: const TextStyle(
-                                        fontWeight: FontWeight.w400,
-                                        color: Colors.black45),
-                                  ),
-                                  const SizedBox(
-                                    height: 10,
-                                  ),
-                                  const Text(
-                                    "imdbID :",
-                                    style:
-                                        TextStyle(fontWeight: FontWeight.w700),
-                                  ),
-                                  const SizedBox(
-                                    height: 5,
-                                  ),
-                                  Text(
-                                    movies.imdbID ?? "",
-                                    style: const TextStyle(
-                                        fontWeight: FontWeight.w400,
-                                        color: Colors.black45),
-                                  ),
-                                  const SizedBox(
-                                    height: 10,
-                                  ),
-                                  const Text(
-                                    "Year :",
-                                    style:
-                                        TextStyle(fontWeight: FontWeight.w700),
-                                  ),
-                                  const SizedBox(
-                                    height: 5,
-                                  ),
-                                  Text(
-                                    movies.year ?? "",
-                                    style: const TextStyle(
-                                        fontWeight: FontWeight.w400,
-                                        color: Colors.black45),
-                                  ),
-                                  const SizedBox(
-                                    height: 5,
-                                  ),
-                                  IconButton(
-                                    onPressed: () {
-                                      BlocProvider.of<HomeScreenCubit>(context)
-                                          .addMovieInDb(movies);
-                                    },
-                                    icon: Icon(Icons.favorite_outline),
-                                  )
-                                ],
-                              ),
-                            ),
-                          ),
                         );
                       },
                       itemCount: state.favoritesMoviesList.length,
