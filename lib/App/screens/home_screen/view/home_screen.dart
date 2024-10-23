@@ -3,12 +3,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:movie_discovery_app/App/data/constants/color_constants.dart';
 import 'package:movie_discovery_app/App/models/movie.dart';
 import 'package:movie_discovery_app/App/routes/app_routes.dart';
 import 'package:movie_discovery_app/App/screens/home_screen/bloc/home_screen_cubit.dart';
 import 'package:movie_discovery_app/App/screens/home_screen/bloc/home_screen_state.dart';
 import 'package:movie_discovery_app/App/screens/home_screen/view/movie_container.dart';
+import 'package:movie_discovery_app/App/utils/theme/bloc/theme_cubit.dart';
 import 'package:movie_discovery_app/App/widgets/snack_bar.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -22,14 +22,17 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       appBar: AppBar(
         elevation: 0,
         backgroundColor: Colors.transparent,
         flexibleSpace: Container(
           decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              colors: [AppColors.primaryColor, AppColors.secondaryColor],
+            gradient: LinearGradient(
+              colors: [
+                Theme.of(context).colorScheme.primary,
+                Theme.of(context).colorScheme.secondary
+              ],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
@@ -43,10 +46,10 @@ class _HomeScreenState extends State<HomeScreen> {
             ],
           ),
         ),
-        title: const Text(
+        title: Text(
           "Welcome",
           style: TextStyle(
-            color: Colors.white,
+            color: Theme.of(context).colorScheme.onSurface,
             fontWeight: FontWeight.bold,
             fontSize: 20,
           ),
@@ -54,11 +57,29 @@ class _HomeScreenState extends State<HomeScreen> {
         centerTitle: false,
         actions: [
           IconButton(
+            icon: Icon(
+              context.read<ThemeCubit>().state.themeData.brightness ==
+                      Brightness.light
+                  ? Icons.dark_mode
+                  : Icons.light_mode,
+              color: Theme.of(context).colorScheme.onSurface,
+            ),
+            onPressed: () {
+              context.read<ThemeCubit>().toggleTheme();
+            },
+          ),
+          const SizedBox(
+            width: 5,
+          ),
+          IconButton(
             onPressed: () async {
               await Navigator.pushNamed(context, Routes.movieSearch);
               BlocProvider.of<HomeScreenCubit>(context).init();
             },
-            icon: const Icon(Icons.search, color: Colors.white),
+            icon: Icon(
+              Icons.search,
+              color: Theme.of(context).colorScheme.onSurface,
+            ),
           ),
         ],
       ),
@@ -70,52 +91,59 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: CircularProgressIndicator(),
               );
             } else if (state is HomeScreenLoadedState) {
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (state.favoritesMoviesList.length > 0) ...[
-                    const Padding(
-                      padding: EdgeInsets.only(top: 16, left: 16),
+              return SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (state.favoritesMoviesList.isNotEmpty) ...[
+                      Padding(
+                        padding: const EdgeInsets.only(top: 16, left: 16),
+                        child: Text(
+                          "Favorite Movies",
+                          style: TextStyle(
+                              fontWeight: FontWeight.w700,
+                              fontSize: 22,
+                              color: Theme.of(context).colorScheme.scrim),
+                        ),
+                      ),
+                      Container(
+                        height: 250,
+                        padding: const EdgeInsets.only(left: 16, top: 16),
+                        child: ListView.builder(
+                          scrollDirection: Axis.horizontal,
+                          itemBuilder: (context, index) {
+                            Movie movies = state.favoritesMoviesList[index];
+                            return MovieOpenContainer(
+                              movie: movies,
+                              isHideFav: true,
+                              onAddToFavorites: (context, movie) {},
+                              onRemoveToFavorites:
+                                  (BuildContext context, Movie movie) {
+                                BlocProvider.of<HomeScreenCubit>(context)
+                                    .removeMovieFromDb(movie, context);
+                              },
+                            );
+                          },
+                          itemCount: state.favoritesMoviesList.length,
+                        ),
+                      ),
+                    ],
+                    Padding(
+                      padding: const EdgeInsets.only(top: 16, left: 16),
                       child: Text(
-                        "Favorite Movies",
+                        "Popular Movies",
                         style: TextStyle(
-                            fontWeight: FontWeight.w700, fontSize: 22),
+                          fontWeight: FontWeight.w700,
+                          fontSize: 22,
+                          color: Theme.of(context).colorScheme.scrim,
+                        ),
                       ),
                     ),
-                    Container(
-                      height: 250,
-                      padding: const EdgeInsets.only(left: 16, top: 16),
-                      child: ListView.builder(
-                        scrollDirection: Axis.horizontal,
-                        itemBuilder: (context, index) {
-                          Movie movies = state.favoritesMoviesList[index];
-                          return MovieOpenContainer(
-                            movie: movies,
-                            isHideFav: true,
-                            onAddToFavorites: (context, movie) {},
-                            onRemoveToFavorites:
-                                (BuildContext context, Movie movie) {
-                              BlocProvider.of<HomeScreenCubit>(context)
-                                  .removeMovieFromDb(movie, context);
-                            },
-                          );
-                        },
-                        itemCount: state.favoritesMoviesList.length,
-                      ),
-                    ),
-                  ],
-                  const Padding(
-                    padding: EdgeInsets.only(top: 16, left: 16),
-                    child: Text(
-                      "Popular Movies",
-                      style:
-                          TextStyle(fontWeight: FontWeight.w700, fontSize: 22),
-                    ),
-                  ),
-                  Expanded(
-                    child: Padding(
-                      padding: EdgeInsets.only(top: 16, left: 16),
+                    Padding(
+                      padding: const EdgeInsets.only(top: 16, left: 16),
                       child: GridView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
                         itemCount: state.populerMoviesList.length,
                         gridDelegate:
                             const SliverGridDelegateWithFixedCrossAxisCount(
@@ -128,24 +156,29 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                         itemBuilder: (context, index) {
                           Movie movies = state.populerMoviesList[index];
+
+                          bool isFav = state.favoritesMoviesList.any((element) => element.imdbID == movies.imdbID);
                           return MovieOpenContainer(
                             movie: movies,
-                            isHideFav: false,
+                            isHideFav: isFav,
                             onAddToFavorites: (context, movie) {
                               BlocProvider.of<HomeScreenCubit>(context)
                                   .addMovieInDb(movie, context);
                             },
                             onRemoveToFavorites:
-                                (BuildContext context, Movie movie) {},
+                                (BuildContext context, Movie movie) {
+                                  BlocProvider.of<HomeScreenCubit>(context)
+                                      .removeMovieFromDb(movie, context);
+                                },
                           );
                         },
                       ),
                     ),
-                  ),
-                  const SizedBox(
-                    height: 5,
-                  ),
-                ],
+                    const SizedBox(
+                      height: 5,
+                    ),
+                  ],
+                ),
               );
             }
             // else if (state is HomeScreenErrorState) {

@@ -27,7 +27,9 @@ class MovieSearchCubit extends Cubit<MovieSearchState> {
         List<dynamic> responseData = serchedata['Search'];
         List<Movie> dataList =
             responseData.map((item) => Movie.fromJson(item)).toList();
-        emit(MovieSearchLoadedState(dataList));
+
+        List<Movie> favoritesMoviesList = await fetchMoviesInDb();
+        emit(MovieSearchLoadedState(dataList,favoritesMoviesList));
       } else {
         String ErrorKey = serchedata['Error'];
 
@@ -36,6 +38,11 @@ class MovieSearchCubit extends Cubit<MovieSearchState> {
     } catch (e) {
       emit(MovieSearchErrorState(e.toString()));
     }
+  }
+
+  Future<List<Movie>> fetchMoviesInDb() async {
+    final movies = await dbHelper.getMovies();
+    return movies;
   }
 
   Future<void> addMovieInDb(Movie movie, BuildContext context) async {
@@ -48,9 +55,29 @@ class MovieSearchCubit extends Cubit<MovieSearchState> {
       }
 
       await dbHelper.insertMovie(movie);
+
+      List<Movie> moviesList = await fetchMoviesInDb();
+      emit(MovieSearchLoadedState(state.populerMoviesList, moviesList));
+
       successMessage(context, "${movie.title} added to favorites");
     } catch (e) {
       errorMessage(context, "Movie already exists in the database");
+    }
+  }
+
+  Future<void> removeMovieFromDb(Movie movie, BuildContext context) async {
+    try {
+      // Remove the movie using dbHelper
+      await dbHelper.deleteMovie(movie.imdbID ?? "");
+
+      // Fetch updated movie list after deletion
+      List<Movie> moviesList = await fetchMoviesInDb();
+      // Emit the updated state with the modified movie list
+      emit(MovieSearchLoadedState(state.populerMoviesList, moviesList));
+
+      successMessage(context, "${movie.title} removed from favorites");
+    } catch (e) {
+      errorMessage(context, "Failed to remove movie from the database");
     }
   }
 }

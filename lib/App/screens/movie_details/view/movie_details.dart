@@ -1,16 +1,18 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/widgets.dart';
-import 'package:movie_discovery_app/App/data/constants/color_constants.dart';
+import 'package:movie_discovery_app/App/models/movie.dart';
 import 'package:movie_discovery_app/App/screens/movie_details/cubit/movie_details_cubit.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:movie_discovery_app/App/utils/common.dart';
 import 'package:movie_discovery_app/App/widgets/snack_bar.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class MovieDetailsScreen extends StatefulWidget {
-  final String imdbID;
+  final Movie? movieData;
 
-  const MovieDetailsScreen({Key? key, required this.imdbID}) : super(key: key);
+  const MovieDetailsScreen({Key? key, required this.movieData})
+      : super(key: key);
 
   @override
   State<MovieDetailsScreen> createState() => _MovieDetailsState();
@@ -20,15 +22,17 @@ class _MovieDetailsState extends State<MovieDetailsScreen> {
   @override
   void initState() {
     super.initState();
+    if (widget.movieData != null &&
+        widget.movieData?.imdbID != null &&
+        widget.movieData!.imdbID!.isNotEmpty) {
+      BlocProvider.of<MovieDetailsCubit>(context)
+          .movieDetails(imdbID: widget.movieData!.imdbID!);
+    }
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    if (widget.imdbID != null && widget.imdbID.isNotEmpty) {
-      BlocProvider.of<MovieDetailsCubit>(context)
-          .movieDetails(imdbID: widget.imdbID);
-    }
   }
 
   @override
@@ -39,259 +43,268 @@ class _MovieDetailsState extends State<MovieDetailsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        elevation: 0,
-        backgroundColor: Colors.transparent,
-        flexibleSpace: Container(
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              colors: [AppColors.primaryColor, AppColors.secondaryColor],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.3),
-                spreadRadius: 5,
-                blurRadius: 15,
-                offset: Offset(0, 5),
-              ),
-            ],
-          ),
-        ),
-        title: const Text(
-          "Movie Details",
-          style: TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-            fontSize: 20,
-          ),
-        ),
-        centerTitle: true,
-        iconTheme: const IconThemeData(color: Colors.white),
-      ),
-      body: BlocConsumer<MovieDetailsCubit, MovieDetailsState>(
-        builder: (context, state) {
-          if (state is MovieDetailsLoadingState) {
-            return const Center(
-              child: CircularProgressIndicator(),
-            );
-          } else if (state is MovieDetailsLoadedState) {
-            return AnimatedOpacity(
-              opacity: 1.0,
-              duration: const Duration(milliseconds: 500),
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      body: AnimatedOpacity(
+        opacity: 1.0,
+        duration: const Duration(milliseconds: 500),
+        child: Stack(
+          children: [
+            SingleChildScrollView(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Hero(
-                    tag: widget.imdbID, // Match the Hero tag
-                    child: Image.network(
-                      state.movieDetails.poster ??
-                          "https://via.placeholder.com/300",
-                      width: double.infinity,
-                      height: 250,
-                      fit: BoxFit.cover,
-                      loadingBuilder: (context, child, loadingProgress) {
-                        if (loadingProgress == null) return child;
-                        return Center(
-                          child: CircularProgressIndicator(
-                            value: loadingProgress.expectedTotalBytes != null
-                                ? loadingProgress.cumulativeBytesLoaded /
-                                    loadingProgress.expectedTotalBytes!
-                                : null,
-                          ),
-                        );
-                      },
-                      errorBuilder: (context, error, stackTrace) =>
-                          const Center(
-                        child: Icon(Icons.error, color: Colors.red),
+                  CachedNetworkImage(
+                    imageUrl: widget.movieData?.poster ??
+                        "https://via.placeholder.com/300",
+                    width: double.infinity,
+                    height: 330,
+                    fit: BoxFit.cover,
+                    progressIndicatorBuilder: (context, url, progress) {
+                      return Center(
+                      child: CircularProgressIndicator(
+                        value: progress.progress,
                       ),
-                    ),
+                    );
+                    },
+                    errorWidget: (context, url, error) => const Icon(Icons.error,color: Colors.red),
                   ),
                   const SizedBox(height: 10),
-                  Expanded(
-                    child: SingleChildScrollView(
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 15),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: Text(
-                                    state.movieDetails.genre != null &&
-                                            state.movieDetails.genre!.isNotEmpty
-                                        ? state.movieDetails.genre!
-                                            .split(",")
-                                            .join(" • ")
-                                        : "N/A",
-                                    style: const TextStyle(
-                                        fontSize: 14, color: Colors.black54),
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
+                  BlocConsumer<MovieDetailsCubit, MovieDetailsState>(
+                    builder: (context, state) {
+                      if (state is MovieDetailsLoadingState) {
+                        return const SizedBox(
+                          height: 200,
+                          child: Center(child: CircularProgressIndicator()),
+                        );
+                      } else if (state is MovieDetailsLoadedState) {
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 15),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      state.movieDetails.genre != null &&
+                                              state.movieDetails.genre!
+                                                  .isNotEmpty
+                                          ? state.movieDetails.genre!
+                                              .split(",")
+                                              .join(" • ")
+                                          : "N/A",
+                                      style: TextStyle(
+                                          fontSize: 14,
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .tertiary),
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
                                   ),
-                                ),
-                              ],
-                            ),
-                            Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Expanded(
-                                  child: Text(
-                                    state.movieDetails.title ?? "N/A",
-                                    style: const TextStyle(
-                                        fontSize: 22,
-                                        color: Colors.black,
-                                        fontWeight: FontWeight.bold),
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
+                                ],
+                              ),
+                              Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      state.movieDetails.title ?? "N/A",
+                                      style: TextStyle(
+                                          fontSize: 22,
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .scrim,
+                                          fontWeight: FontWeight.bold),
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
                                   ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 5),
-                            Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Container(
-                                  decoration: BoxDecoration(
-                                    border: Border.all(color: Colors.black),
-                                    borderRadius: BorderRadius.circular(25),
+                                ],
+                              ),
+                              const SizedBox(height: 5),
+                              Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Container(
+                                    decoration: BoxDecoration(
+                                      border: Border.all(
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .scrim),
+                                      borderRadius: BorderRadius.circular(25),
+                                    ),
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 10, vertical: 2),
+                                    child: Text(
+                                      state.movieDetails.rated ?? "N/A",
+                                      style: TextStyle(
+                                          fontSize: 12,
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .scrim,
+                                          fontWeight: FontWeight.bold),
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
                                   ),
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 10, vertical: 2),
-                                  child: Text(
-                                    state.movieDetails.rated ?? "N/A",
-                                    style: const TextStyle(
-                                        fontSize: 12,
-                                        color: Colors.black,
-                                        fontWeight: FontWeight.bold),
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
+                                  const SizedBox(width: 10),
+                                  Container(
+                                    decoration: BoxDecoration(
+                                      border: Border.all(
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .scrim),
+                                      borderRadius: BorderRadius.circular(25),
+                                    ),
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 10, vertical: 2),
+                                    child: Text(
+                                      state.movieDetails.year ?? "N/A",
+                                      style: TextStyle(
+                                          fontSize: 12,
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .scrim,
+                                          fontWeight: FontWeight.bold),
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
                                   ),
-                                ),
-                                const SizedBox(width: 10),
-                                Container(
-                                  decoration: BoxDecoration(
-                                    border: Border.all(color: Colors.black),
-                                    borderRadius: BorderRadius.circular(25),
-                                  ),
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 10, vertical: 2),
-                                  child: Text(
-                                    state.movieDetails.year ?? "N/A",
-                                    style: const TextStyle(
-                                        fontSize: 12,
-                                        color: Colors.black,
-                                        fontWeight: FontWeight.bold),
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                                const SizedBox(width: 10),
-                                Container(
-                                  decoration: BoxDecoration(
-                                    border: Border.all(color: Colors.black),
-                                    borderRadius: BorderRadius.circular(25),
-                                  ),
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 10, vertical: 2),
-                                  child: Text(
-                                    formatRuntime(state.movieDetails.runtime),
-                                    style: const TextStyle(
-                                        fontSize: 12,
-                                        color: Colors.black,
-                                        fontWeight: FontWeight.bold),
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                )
-                              ],
-                            ),
-                            const SizedBox(height: 15),
-                            Text(
-                              state.movieDetails.plot ?? "N/A",
-                              style: const TextStyle(
+                                  const SizedBox(width: 10),
+                                  Container(
+                                    decoration: BoxDecoration(
+                                      border: Border.all(
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .scrim),
+                                      borderRadius: BorderRadius.circular(25),
+                                    ),
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 10, vertical: 2),
+                                    child: Text(
+                                      formatRuntime(state.movieDetails.runtime),
+                                      style: TextStyle(
+                                          fontSize: 12,
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .scrim,
+                                          fontWeight: FontWeight.bold),
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  )
+                                ],
+                              ),
+                              const SizedBox(height: 15),
+                              Text(
+                                state.movieDetails.plot ?? "N/A",
+                                style: TextStyle(
                                   fontSize: 14,
-                                  color: Colors.black,
-                                  fontWeight: FontWeight.normal),
-                            ),
-                            const SizedBox(height: 15),
-                            buildDetailRow(
-                                "Released", state.movieDetails.released),
-                            buildDetailRow(
-                                "Director", state.movieDetails.director),
-                            buildDetailRow("Writer", state.movieDetails.writer),
-                            buildDetailRow("Actors", state.movieDetails.actors),
-                            buildDetailRow(
-                                "Language", state.movieDetails.language),
-                            buildDetailRow(
-                                "Country", state.movieDetails.country),
-                            buildDetailRow("Awards", state.movieDetails.awards),
-                            buildDetailRow(
-                                "Box Office", state.movieDetails.boxOffice),
-                            buildDetailRow("IMDb Rating",
-                                "${state.movieDetails.imdbRating}/10"),
-                            buildDetailRow(
-                                "Metascore", state.movieDetails.metascore),
-                            const SizedBox(height: 5),
-                            // Ratings Section
-                            const Text(
-                              "Ratings",
-                              style: TextStyle(
-                                  fontWeight: FontWeight.bold, fontSize: 14),
-                            ),
-                            ...?state.movieDetails.ratings?.map(
-                              (rating) => Padding(
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 5),
-                                child: Row(
-                                  children: [
-                                    Text(
-                                      "${rating.source} ",
-                                      style: const TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 14),
-                                    ),
-                                    Text(
-                                      rating.value ?? "",
-                                      style: const TextStyle(
-                                          fontSize: 14, color: Colors.black54),
-                                    ),
-                                  ],
+                                  color: Theme.of(context).colorScheme.scrim,
+                                  fontWeight: FontWeight.normal,
                                 ),
                               ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
+                              const SizedBox(height: 15),
+                              buildDetailRow(
+                                  "Released", state.movieDetails.released),
+                              buildDetailRow(
+                                  "Director", state.movieDetails.director),
+                              buildDetailRow(
+                                  "Writer", state.movieDetails.writer),
+                              buildDetailRow(
+                                  "Actors", state.movieDetails.actors),
+                              buildDetailRow(
+                                  "Language", state.movieDetails.language),
+                              buildDetailRow(
+                                  "Country", state.movieDetails.country),
+                              buildDetailRow(
+                                  "Awards", state.movieDetails.awards),
+                              buildDetailRow(
+                                  "Box Office", state.movieDetails.boxOffice),
+                              buildDetailRow("IMDb Rating",
+                                  "${state.movieDetails.imdbRating}/10"),
+                              buildDetailRow(
+                                  "Metascore", state.movieDetails.metascore),
+                              const SizedBox(height: 5),
+                              // Ratings Section
+                              Text(
+                                "Ratings",
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14,
+                                  color: Theme.of(context).colorScheme.scrim,
+                                ),
+                              ),
+                              ...?state.movieDetails.ratings?.map(
+                                (rating) => Padding(
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 5),
+                                  child: Row(
+                                    children: [
+                                      Text(
+                                        "${rating.source} ",
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 14,
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .scrim,
+                                        ),
+                                      ),
+                                      Text(
+                                        rating.value ?? "",
+                                        style: TextStyle(
+                                            fontSize: 14,
+                                            color: Theme.of(context)
+                                                .colorScheme
+                                                .tertiary),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      } else if (state is MovieDetailsErrorState) {
+                        return Center(
+                          child: Text(
+                            state.errorMessage,
+                            style: const TextStyle(color: Colors.red),
+                          ),
+                        );
+                      } else {
+                        return const Center(
+                          child: Text(
+                            "en error occur",
+                            style: TextStyle(color: Colors.red),
+                          ),
+                        );
+                      }
+                    },
+                    listener: (context, state) {
+                      if (state is MovieDetailsErrorState) {
+                        return errorMessage(context, state.errorMessage);
+                      }
+                    },
                   ),
                 ],
               ),
-            );
-          } else if (state is MovieDetailsErrorState) {
-            return Center(
-              child: Text(
-                state.errorMessage,
-                style: const TextStyle(color: Colors.red),
+            ),
+            SafeArea(
+                child: Container(
+              margin: const EdgeInsets.only(left: 10, top: 10),
+              padding: EdgeInsets.zero,
+              decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Theme.of(context).colorScheme.scrim.withOpacity(0.5)),
+              child: BackButton(
+                color: Theme.of(context).colorScheme.onSurface,
               ),
-            );
-          } else {
-            return const Center(
-              child: Text(
-                "en error occur",
-                style: TextStyle(color: Colors.red),
-              ),
-            );
-          }
-        },
-        listener: (context, state) {
-          if (state is MovieDetailsErrorState) {
-            return errorMessage(context, state.errorMessage);
-          }
-        },
+            ))
+          ],
+        ),
       ),
     );
   }
@@ -305,12 +318,16 @@ class _MovieDetailsState extends State<MovieDetailsScreen> {
         children: [
           Text(
             "$label ",
-            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+            style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 14,
+                color: Theme.of(context).colorScheme.scrim),
           ),
           Expanded(
             child: Text(
               value ?? "N/A",
-              style: const TextStyle(fontSize: 14, color: Colors.black54),
+              style: TextStyle(
+                  fontSize: 14, color: Theme.of(context).colorScheme.tertiary),
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
             ),
@@ -329,7 +346,8 @@ class _MovieDetailsState extends State<MovieDetailsScreen> {
           Expanded(
             child: Text(
               value ?? "N/A",
-              style: const TextStyle(fontSize: 16, color: Colors.black54),
+              style: TextStyle(
+                  fontSize: 16, color: Theme.of(context).colorScheme.tertiary),
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
             ),

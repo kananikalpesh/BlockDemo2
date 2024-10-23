@@ -6,17 +6,20 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:movie_discovery_app/App/models/movie.dart';
 import 'package:movie_discovery_app/App/screens/movie_details/cubit/movie_details_cubit.dart';
 import 'package:movie_discovery_app/App/screens/movie_details/view/movie_details.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class MovieOpenContainerSearch extends StatelessWidget {
   final Movie movie;
   final bool isHideFav;
   final Function(BuildContext context, Movie movie) onAddToFavorites;
+  final Function(BuildContext context, Movie movie) onRemoveToFavorites;
 
   const MovieOpenContainerSearch({
     Key? key,
     required this.movie,
     required this.isHideFav,
     required this.onAddToFavorites,
+    required this.onRemoveToFavorites,
   }) : super(key: key);
 
   @override
@@ -26,15 +29,16 @@ class MovieOpenContainerSearch extends StatelessWidget {
       closedShape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
       ),
-      openColor: Colors.transparent,
-      closedColor: Colors.transparent,
-      transitionDuration: const Duration(milliseconds: 600),
+      openColor: Theme.of(context).colorScheme.surface,
+      closedColor: Theme.of(context).colorScheme.surface,
+      transitionDuration: const Duration(milliseconds: 500),
+      transitionType: ContainerTransitionType.fade,
       openBuilder: (context, _) {
         return BlocProvider<MovieDetailsCubit>(
           create: (context) =>
               MovieDetailsCubit()..movieDetails(imdbID: movie.imdbID ?? ""),
           child: MovieDetailsScreen(
-            imdbID: movie.imdbID ?? "",
+            movieData: movie,
           ),
         );
       },
@@ -47,7 +51,7 @@ class MovieOpenContainerSearch extends StatelessWidget {
             margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(12),
-              color: Colors.white,
+              color: Theme.of(context).colorScheme.outlineVariant,
               boxShadow: const [
                 BoxShadow(
                   color: Colors.black12,
@@ -66,22 +70,18 @@ class MovieOpenContainerSearch extends StatelessWidget {
                     borderRadius: const BorderRadius.horizontal(
                       left: Radius.circular(12),
                     ),
-                    child: Image.network(
-                      movie.poster ?? "https://via.placeholder.com/150",
+                    child: CachedNetworkImage(
+                      imageUrl: movie.poster ?? "https://via.placeholder.com/150",
                       width: double.infinity,
                       fit: BoxFit.cover,
-                      loadingBuilder: (context, child, loadingProgress) {
-                        if (loadingProgress == null) return child;
-
-                        return const Center(
-                          child: CircularProgressIndicator(),
-                        );
-                      },
-                      errorBuilder: (context, error, stackTrace) =>
-                          const Center(
-                        child: Icon(Icons.error, color: Colors.red),
+                      progressIndicatorBuilder: (context, url, progress) => Center(
+                        child: CircularProgressIndicator(
+                          value: progress.progress,
+                        ),
                       ),
+                      errorWidget: (context, url, error) => const Icon(Icons.error,color: Colors.red),
                     ),
+
                   ),
                 ),
                 Expanded(
@@ -98,17 +98,18 @@ class MovieOpenContainerSearch extends StatelessWidget {
                             children: [
                               Text(
                                 movie.title ?? "",
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontWeight: FontWeight.bold,
                                   fontSize: 16,
+                                  color: Theme.of(context).colorScheme.scrim,
                                 ),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                               ),
                               Text(
                                 "${movie.year}",
-                                style: const TextStyle(
-                                  color: Colors.black54,
+                                style: TextStyle(
+                                  color: Theme.of(context).colorScheme.tertiary,
                                   fontSize: 14,
                                 ),
                               ),
@@ -124,6 +125,22 @@ class MovieOpenContainerSearch extends StatelessWidget {
                               },
                               icon: const Icon(
                                 Icons.favorite_outline,
+                                size: 18,
+                              ),
+                            ),
+                          ),
+                        ],
+                        if (isHideFav) ...[
+                          Align(
+                            alignment: Alignment.centerRight,
+                            child: IconButton(
+                              onPressed: () {
+                                onRemoveToFavorites(context, movie);
+                              },
+                              padding: EdgeInsets.zero,
+                              icon: const Icon(
+                                Icons.favorite,
+                                color: Colors.red,
                                 size: 18,
                               ),
                             ),

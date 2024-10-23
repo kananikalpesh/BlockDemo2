@@ -27,8 +27,8 @@ abstract class RouteNavigator {
     Routes.movieDetails: (BuildContext context) {
       return BlocProvider(
         create: (context) => MovieDetailsCubit(),
-        child: MovieDetailsScreen(
-          imdbID: '',
+        child: const MovieDetailsScreen(
+          movieData: null,
         ),
       );
     },

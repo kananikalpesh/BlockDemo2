@@ -6,6 +6,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:movie_discovery_app/App/models/movie.dart';
 import 'package:movie_discovery_app/App/screens/movie_details/cubit/movie_details_cubit.dart';
 import 'package:movie_discovery_app/App/screens/movie_details/view/movie_details.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class MovieOpenContainer extends StatelessWidget {
   final Movie movie;
@@ -30,15 +31,15 @@ class MovieOpenContainer extends StatelessWidget {
         closedShape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
         ),
-        openColor: Colors.transparent,
-        closedColor: Colors.white,
-        transitionDuration: const Duration(milliseconds: 600),
+        openColor: Theme.of(context).colorScheme.surface,
+        closedColor: Theme.of(context).colorScheme.surface,
+        transitionDuration: const Duration(milliseconds: 500),
         openBuilder: (context, _) {
           return BlocProvider<MovieDetailsCubit>(
             create: (context) =>
                 MovieDetailsCubit()..movieDetails(imdbID: movie.imdbID ?? ""),
             child: MovieDetailsScreen(
-              imdbID: movie.imdbID ?? "",
+              movieData: movie,
             ),
           );
         },
@@ -61,21 +62,16 @@ class MovieOpenContainer extends StatelessWidget {
                             top: Radius.circular(12),
                             bottom: Radius.circular(12),
                           ),
-                          child: Image.network(
-                            movie.poster ?? "https://via.placeholder.com/150",
+                          child: CachedNetworkImage(
+                            imageUrl: movie.poster ?? "https://via.placeholder.com/150",
                             width: double.infinity,
                             fit: BoxFit.cover,
-                            loadingBuilder: (context, child, loadingProgress) {
-                              if (loadingProgress == null) return child;
-
-                              return const Center(
-                                child: CircularProgressIndicator(),
-                              );
-                            },
-                            errorBuilder: (context, error, stackTrace) =>
-                                const Center(
-                              child: Icon(Icons.error, color: Colors.red),
+                            progressIndicatorBuilder: (context, url, progress) => Center(
+                              child: CircularProgressIndicator(
+                                value: progress.progress,
+                              ),
                             ),
+                            errorWidget: (context, url, error) => const Icon(Icons.error,color: Colors.red),
                           ),
                         ),
                       ),
@@ -86,8 +82,8 @@ class MovieOpenContainer extends StatelessWidget {
                             width: 30,
                             height: 30,
                             margin: const EdgeInsets.all(10),
-                            decoration: const BoxDecoration(
-                              color: Colors.white,
+                            decoration: BoxDecoration(
+                              color: Theme.of(context).colorScheme.onSurface,
                               borderRadius: BorderRadius.all(
                                 Radius.circular(5),
                               ),
@@ -114,8 +110,8 @@ class MovieOpenContainer extends StatelessWidget {
                             width: 30,
                             height: 30,
                             margin: const EdgeInsets.all(10),
-                            decoration: const BoxDecoration(
-                              color: Colors.white,
+                            decoration: BoxDecoration(
+                              color: Theme.of(context).colorScheme.onSurface,
                               borderRadius: BorderRadius.all(
                                 Radius.circular(5),
                               ),
@@ -146,9 +142,10 @@ class MovieOpenContainer extends StatelessWidget {
                       children: [
                         Text(
                           movie.title ?? "",
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 14,
+                            color: Theme.of(context).colorScheme.scrim,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -156,8 +153,8 @@ class MovieOpenContainer extends StatelessWidget {
                         const SizedBox(height: 4),
                         Text(
                           "${movie.year}",
-                          style: const TextStyle(
-                            color: Colors.black54,
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.tertiary,
                             fontSize: 14,
                           ),
                         ),

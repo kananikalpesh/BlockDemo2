@@ -9,8 +9,8 @@ getSnackBar(BuildContext context, String message, SNACK type, {String? title}) {
         child: Text(
           message,
           maxLines: 2,
-          style: const TextStyle(
-            color: Colors.white,
+          style: TextStyle(
+            color: Theme.of(context).colorScheme.scrim,
             fontSize: 13,
             fontWeight: FontWeight.normal,
           ),
