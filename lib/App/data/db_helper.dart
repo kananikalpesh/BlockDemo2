@@ -38,6 +38,16 @@ class DatabaseHelper {
     );
   }
 
+  Future<bool> isMovieExists(String imdbID) async {
+    final db = await database;
+    final List<Map<String, dynamic>> maps = await db.query(
+      'movies', // Replace 'movies' with your table name
+      where: 'imdbID = ?', // imdbID column name in your table
+      whereArgs: [imdbID],
+    );
+    return maps.isNotEmpty;
+  }
+
   // Insert a movie into the database
   Future<void> insertMovie(Movie movie) async {
     final db = await database;
@@ -59,5 +69,14 @@ class DatabaseHelper {
   Future<void> deleteAllMovies() async {
     final db = await database;
     await db.delete('movies');
+  }
+
+  Future<void> deleteMovie(String imdbID) async {
+    final db = await database;
+    await db.delete(
+      'movies', // Replace with your table name
+      where: 'imdbID = ?', // imdbID column name in your table
+      whereArgs: [imdbID],
+    );
   }
 }

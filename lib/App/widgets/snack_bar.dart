@@ -20,7 +20,7 @@ getSnackBar(BuildContext context, String message, SNACK type, {String? title}) {
       elevation: 10,
       behavior: SnackBarBehavior.floating,
       margin: EdgeInsets.all(5),
-      duration: const Duration(milliseconds: 700),
+      duration: const Duration(seconds: 2),
     ),
   );
 }

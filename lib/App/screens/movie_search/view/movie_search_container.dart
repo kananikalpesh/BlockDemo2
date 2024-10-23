@@ -26,8 +26,8 @@ class MovieOpenContainerSearch extends StatelessWidget {
       closedShape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
       ),
-      // openColor: Colors.transparent,
-      // closedColor: Colors.transparent,
+      openColor: Colors.transparent,
+      closedColor: Colors.transparent,
       transitionDuration: const Duration(milliseconds: 600),
       openBuilder: (context, _) {
         return BlocProvider<MovieDetailsCubit>(
@@ -43,16 +43,16 @@ class MovieOpenContainerSearch extends StatelessWidget {
         child: GestureDetector(
           onTap: openContainer,
           child: Container(
-            height: 120,
-            margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 15),
+            height: 80,
+            margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(12),
               color: Colors.white,
               boxShadow: const [
                 BoxShadow(
                   color: Colors.black12,
-                  blurRadius: 6,
-                  spreadRadius: 2,
+                  blurRadius: 2,
+                  spreadRadius: 1,
                   offset: Offset(0, 3),
                 ),
               ],
@@ -60,12 +60,11 @@ class MovieOpenContainerSearch extends StatelessWidget {
             child: Row(
               children: [
                 SizedBox(
-                  width: 120,
-                  height: 120,
+                  width: 80,
+                  height: 80,
                   child: ClipRRect(
-                    borderRadius: const BorderRadius.vertical(
-                      top: Radius.circular(12),
-                      bottom: Radius.circular(12),
+                    borderRadius: const BorderRadius.horizontal(
+                      left: Radius.circular(12),
                     ),
                     child: Image.network(
                       movie.poster ?? "https://via.placeholder.com/150",
@@ -87,25 +86,33 @@ class MovieOpenContainerSearch extends StatelessWidget {
                 ),
                 Expanded(
                   child: Padding(
-                    padding: const EdgeInsets.all(8),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                    padding: const EdgeInsets.only(left: 8),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      mainAxisAlignment: MainAxisAlignment.start,
                       children: [
-                        Text(
-                          movie.title ?? "",
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          "Year: ${movie.year}",
-                          style: const TextStyle(
-                            color: Colors.black54,
-                            fontSize: 14,
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                movie.title ?? "",
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              Text(
+                                "${movie.year}",
+                                style: const TextStyle(
+                                  color: Colors.black54,
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                         if (!isHideFav) ...[
@@ -115,7 +122,10 @@ class MovieOpenContainerSearch extends StatelessWidget {
                               onPressed: () {
                                 onAddToFavorites(context, movie);
                               },
-                              icon: const Icon(Icons.favorite_outline),
+                              icon: const Icon(
+                                Icons.favorite_outline,
+                                size: 18,
+                              ),
                             ),
                           ),
                         ]

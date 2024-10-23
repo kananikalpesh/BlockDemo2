@@ -1,5 +1,6 @@
 import 'package:bloc/bloc.dart';
 import 'package:dio/dio.dart';
+// ignore: unused_import
 import 'package:movie_discovery_app/App/models/movie.dart';
 import 'package:movie_discovery_app/App/models/movies_details.dart';
 import 'package:movie_discovery_app/App/screens/movie_details/repository/movie_details_repository.dart';

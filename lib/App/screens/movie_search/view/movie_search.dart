@@ -102,7 +102,7 @@ class _MovieSearchState extends State<MovieSearch> {
                           isHideFav: false,
                           onAddToFavorites: (context, movie) {
                             BlocProvider.of<MovieSearchCubit>(context)
-                                .addMovieInDb(movie);
+                                .addMovieInDb(movie, context);
                           },
                         );
                       },

@@ -4,6 +4,7 @@ import 'package:movie_discovery_app/App/data/constants/color_constants.dart';
 import 'package:movie_discovery_app/App/screens/movie_details/cubit/movie_details_cubit.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:movie_discovery_app/App/utils/common.dart';
 import 'package:movie_discovery_app/App/widgets/snack_bar.dart';
 
 class MovieDetailsScreen extends StatefulWidget {
@@ -16,28 +17,17 @@ class MovieDetailsScreen extends StatefulWidget {
 }
 
 class _MovieDetailsState extends State<MovieDetailsScreen> {
-  //String? imdbID;
-
   @override
   void initState() {
-    // TODO: implement initState
     super.initState();
-    // imdbID = ModalRoute.of(context)?.settings.arguments as dynamic;
-    // BlocProvider.of<MovieDetailsCubit>(context)
-    //     .movieDetails(imdbID: imdbID ?? "");
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-
-    // Retrieve the route arguments safely after initState
-    //imdbID = ModalRoute.of(context)?.settings.arguments as String?;
-
-    // Fetch movie details using the Cubit, after the widget context is ready
-    if (widget.imdbID != null && widget.imdbID!.isNotEmpty) {
+    if (widget.imdbID != null && widget.imdbID.isNotEmpty) {
       BlocProvider.of<MovieDetailsCubit>(context)
-          .movieDetails(imdbID: widget.imdbID!);
+          .movieDetails(imdbID: widget.imdbID);
     }
   }
 
@@ -118,47 +108,139 @@ class _MovieDetailsState extends State<MovieDetailsScreen> {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 10),
                   Expanded(
                     child: SingleChildScrollView(
                       child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        padding: const EdgeInsets.symmetric(horizontal: 15),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            buildDetailRow("Title:", state.movieDetails.title),
-                            buildDetailRow("Year:", state.movieDetails.year),
-                            buildDetailRow("Rated:", state.movieDetails.rated),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    state.movieDetails.genre != null &&
+                                            state.movieDetails.genre!.isNotEmpty
+                                        ? state.movieDetails.genre!
+                                            .split(",")
+                                            .join(" • ")
+                                        : "N/A",
+                                    style: const TextStyle(
+                                        fontSize: 14, color: Colors.black54),
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    state.movieDetails.title ?? "N/A",
+                                    style: const TextStyle(
+                                        fontSize: 22,
+                                        color: Colors.black,
+                                        fontWeight: FontWeight.bold),
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 5),
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Container(
+                                  decoration: BoxDecoration(
+                                    border: Border.all(color: Colors.black),
+                                    borderRadius: BorderRadius.circular(25),
+                                  ),
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 10, vertical: 2),
+                                  child: Text(
+                                    state.movieDetails.rated ?? "N/A",
+                                    style: const TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.black,
+                                        fontWeight: FontWeight.bold),
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                                const SizedBox(width: 10),
+                                Container(
+                                  decoration: BoxDecoration(
+                                    border: Border.all(color: Colors.black),
+                                    borderRadius: BorderRadius.circular(25),
+                                  ),
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 10, vertical: 2),
+                                  child: Text(
+                                    state.movieDetails.year ?? "N/A",
+                                    style: const TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.black,
+                                        fontWeight: FontWeight.bold),
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                                const SizedBox(width: 10),
+                                Container(
+                                  decoration: BoxDecoration(
+                                    border: Border.all(color: Colors.black),
+                                    borderRadius: BorderRadius.circular(25),
+                                  ),
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 10, vertical: 2),
+                                  child: Text(
+                                    formatRuntime(state.movieDetails.runtime),
+                                    style: const TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.black,
+                                        fontWeight: FontWeight.bold),
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                )
+                              ],
+                            ),
+                            const SizedBox(height: 15),
+                            Text(
+                              state.movieDetails.plot ?? "N/A",
+                              style: const TextStyle(
+                                  fontSize: 14,
+                                  color: Colors.black,
+                                  fontWeight: FontWeight.normal),
+                            ),
+                            const SizedBox(height: 15),
                             buildDetailRow(
-                                "Released:", state.movieDetails.released),
+                                "Released", state.movieDetails.released),
                             buildDetailRow(
-                                "Runtime:", state.movieDetails.runtime),
-                            buildDetailRow("Genre:", state.movieDetails.genre),
+                                "Director", state.movieDetails.director),
+                            buildDetailRow("Writer", state.movieDetails.writer),
+                            buildDetailRow("Actors", state.movieDetails.actors),
                             buildDetailRow(
-                                "Director:", state.movieDetails.director),
+                                "Language", state.movieDetails.language),
                             buildDetailRow(
-                                "Writer:", state.movieDetails.writer),
+                                "Country", state.movieDetails.country),
+                            buildDetailRow("Awards", state.movieDetails.awards),
                             buildDetailRow(
-                                "Actors:", state.movieDetails.actors),
-                            buildDetailRow("Plot:", state.movieDetails.plot),
-                            buildDetailRow(
-                                "Language:", state.movieDetails.language),
-                            buildDetailRow(
-                                "Country:", state.movieDetails.country),
-                            buildDetailRow(
-                                "Awards:", state.movieDetails.awards),
-                            buildDetailRow(
-                                "Box Office:", state.movieDetails.boxOffice),
-                            buildDetailRow("IMDb Rating:",
+                                "Box Office", state.movieDetails.boxOffice),
+                            buildDetailRow("IMDb Rating",
                                 "${state.movieDetails.imdbRating}/10"),
                             buildDetailRow(
-                                "Metascore:", state.movieDetails.metascore),
-                            const SizedBox(height: 15),
+                                "Metascore", state.movieDetails.metascore),
+                            const SizedBox(height: 5),
                             // Ratings Section
                             const Text(
-                              "Ratings:",
+                              "Ratings",
                               style: TextStyle(
-                                  fontWeight: FontWeight.bold, fontSize: 18),
+                                  fontWeight: FontWeight.bold, fontSize: 14),
                             ),
                             ...?state.movieDetails.ratings?.map(
                               (rating) => Padding(
@@ -167,15 +249,15 @@ class _MovieDetailsState extends State<MovieDetailsScreen> {
                                 child: Row(
                                   children: [
                                     Text(
-                                      "${rating.source}: ",
+                                      "${rating.source} ",
                                       style: const TextStyle(
                                           fontWeight: FontWeight.bold,
-                                          fontSize: 16),
+                                          fontSize: 14),
                                     ),
                                     Text(
                                       rating.value ?? "",
                                       style: const TextStyle(
-                                          fontSize: 16, color: Colors.black54),
+                                          fontSize: 14, color: Colors.black54),
                                     ),
                                   ],
                                 ),
@@ -217,14 +299,33 @@ class _MovieDetailsState extends State<MovieDetailsScreen> {
   // Helper function to create a consistent style for each detail row
   Widget buildDetailRow(String label, String? value) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 15),
+      padding: const EdgeInsets.only(bottom: 5),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             "$label ",
-            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
           ),
+          Expanded(
+            child: Text(
+              value ?? "N/A",
+              style: const TextStyle(fontSize: 14, color: Colors.black54),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget buildDetailRowWithoutLabel(String? value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 15),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
           Expanded(
             child: Text(
               value ?? "N/A",

@@ -2,11 +2,11 @@ import 'package:dio/dio.dart';
 import 'package:movie_discovery_app/App/data/constants/api_config.dart';
 import 'package:movie_discovery_app/App/data/provider/api_provider_dio.dart';
 import 'package:movie_discovery_app/App/data/exception/dio_exeception.dart';
+import 'package:movie_discovery_app/App/utils/common.dart';
 
 class MovieSearchRepository {
   Future<Response?> fetchSearchApi(
     String searchQueary,
-    String? year,
   ) async {
     try {
       Response? response =
@@ -14,7 +14,9 @@ class MovieSearchRepository {
         'page': 1,
         'type': 'movie',
         's': searchQueary,
-        if (year != null) ...{'y': year},
+        if (searchQueary != null && isNumeric(searchQueary)) ...{
+          'y': searchQueary
+        },
         'apikey': ApiConfig.apiKey,
       });
 

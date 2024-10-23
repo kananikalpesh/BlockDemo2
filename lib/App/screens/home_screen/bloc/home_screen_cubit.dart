@@ -1,9 +1,11 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:movie_discovery_app/App/data/db_helper.dart';
 import 'package:movie_discovery_app/App/models/movie.dart';
 import 'package:movie_discovery_app/App/screens/home_screen/bloc/home_screen_state.dart';
 import 'package:movie_discovery_app/App/screens/home_screen/repository/home_screen_repository.dart';
+import 'package:movie_discovery_app/App/widgets/snack_bar.dart';
 
 class HomeScreenCubit extends Cubit<HomeScreenState> {
   final HomeScreenRepository homeScreenRepository = HomeScreenRepository();
@@ -44,24 +46,38 @@ class HomeScreenCubit extends Cubit<HomeScreenState> {
   }
 
   // Insert a movie into the local DB
-  Future<void> addMovieInDb(Movie movie) async {
+  Future<void> addMovieInDb(Movie movie, BuildContext context) async {
     try {
+      bool exists = await dbHelper.isMovieExists(movie.imdbID ?? "");
+
+      if (exists) {
+        errorMessage(context, "The movie is already in your favorite list");
+        return;
+      }
+
       await dbHelper.insertMovie(movie);
       List<Movie> moviesList = await fetchMoviesInDb();
       emit(HomeScreenLoadedState(state.populerMoviesList, moviesList));
-      // Re-fetch movies after insertion
+
+      successMessage(context, "${movie.title} added to favorites");
     } catch (e) {
-      emit(HomeScreenErrorState('Failed to add movie to the database'));
+      errorMessage(context, "Movie already exists in the database");
     }
   }
 
-  // Clear all movies from the local DB
-  Future<void> clearMoviesInDb() async {
+  Future<void> removeMovieFromDb(Movie movie, BuildContext context) async {
     try {
-      await dbHelper.deleteAllMovies();
-      fetchMoviesInDb(); // Re-fetch movies after deletion
+      // Remove the movie using dbHelper
+      await dbHelper.deleteMovie(movie.imdbID ?? "");
+
+      // Fetch updated movie list after deletion
+      List<Movie> moviesList = await fetchMoviesInDb();
+      // Emit the updated state with the modified movie list
+      emit(HomeScreenLoadedState(state.populerMoviesList, moviesList));
+
+      successMessage(context, "${movie.title} removed from favorites");
     } catch (e) {
-      emit(HomeScreenErrorState('Failed to clear movies from the database'));
+      errorMessage(context, "Failed to remove movie from the database");
     }
   }
 }
